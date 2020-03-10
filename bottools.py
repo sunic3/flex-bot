@@ -1,24 +1,23 @@
-import traceback
-
 import discord
+
+from cfg import youtube_token as yt
+
+import traceback
 import requests
 import json
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from cfg import youtube_token as yt
 
-
-setting_dict = {}
-token = yt[0]
+TOKEN = yt[0]
 
 
 def yt_next():
-    global token
-    if yt.index(token) == (len(token)-1):
-        token = yt[0]
+    global TOKEN
+    if yt.index(TOKEN) == (len(TOKEN)-1):
+        TOKEN = yt[0]
     else:
-        token = yt[yt.index(token)+1]
+        TOKEN = yt[yt.index(TOKEN)+1]
 
 
 def postix(ctx):
@@ -42,7 +41,7 @@ def postix(ctx):
 
 def wordend(d, one='', two='а', five='ов'):
     d = abs(d)
-    if d == 1 or d > 20 and str(d)[-1] == '1':
+    if d == 1 or d > 20 and str(d)[-1] == '1' and str(d)[-2:] != '11':
         return one
     if 2 <= d <= 4 or d > 20 and str(d)[-1] in '234':
         return two
@@ -63,7 +62,7 @@ def data_write(guild, data):
 def yt_search(q, part, max, type):
     while True:
         try:
-            sk = build("youtube", "v3", developerKey=token) \
+            sk = build("youtube", "v3", developerKey=TOKEN) \
                 .search().list(q=q, part=part, maxResults=max, type=type).execute()
             return sk
         except KeyError:
@@ -75,7 +74,7 @@ def yt_search(q, part, max, type):
 def yt_playlist(part, id):
     while True:
         try:
-            sk = build("youtube", "v3", developerKey=token) \
+            sk = build("youtube", "v3", developerKey=TOKEN) \
                 .playlists().list(part=part, id=id).execute()
             return sk
         except KeyError:
@@ -85,7 +84,7 @@ def yt_playlist(part, id):
 
 
 def yt_request(url, params):
-    params['key'] = token
+    params['key'] = TOKEN
     while True:
         try:
             res = requests.get(url, params=params)
@@ -109,3 +108,11 @@ async def exp(ctx):
         pass
     await ctx.send('Неизвестная ошибка :eyes:')
 
+
+async def mcm(ctx):
+    try:
+        await ctx.message.delete()
+    except discord.HTTPException:
+        pass
+    except Exception:
+        await exp(ctx)

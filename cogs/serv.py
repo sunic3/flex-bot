@@ -34,7 +34,7 @@ class Serv(commands.Cog):
         embed.set_footer(text=f'версия {version}')
         await info.send(embed=embed)
         os.mkdir(f'{guild.id}')
-        d = {'autoroles': {}, 'autoroles_post_id': None, 'genders': [], 'dj': None,
+        d = {'autoroles': {}, 'autoroles_post_id': None, 'genders': [], 'dj': None, 'notices': [],
              'music_id': None, 'channels': [], 'current': None, 'now': True, 'notice': True, 'count': 5}
         data_write(guild, d)
         with open(f"{guild.id}/history.json", "w") as f:
@@ -71,15 +71,30 @@ class Serv(commands.Cog):
                 role = discord.utils.get(member.guild.roles, id=d['genders'][0])
                 await member.add_roles(role)
                 embed.description += f'По умолчанию тебе добавлена гендерная роль `{role.name}` :male_sign:. ' \
-                    f'Если хочешь изменить её - пропиши команду `.p.g`'
+                    f'Если хочешь изменить её - пропиши команду `.g`'
             embed.set_footer(text='Все мои команды ты можешь подсмотреть с помощью `.help`')
             if d['channels']:
                 info = discord.utils.get(member.guild.text_channels, id=d['channels'][0])
             else:
                 info = discord.utils.find(lambda x: x.permissions_for(member.guild.me).send_messages,
                                           member.guild.text_channels)
-            await info.send(embed=embed, delete_after=120)
             await info.send(f'{member.mention}', delete_after=1)
+            await info.send(embed=embed, delete_after=120)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        if not member.bot:
+            d = data_read(member.guild)
+            if d['autoroles_post_id']:
+                msg = await discord.utils.get(member.guild.text_channels,
+                                              id=int(d['autoroles_post_id'].split(',')[0])) \
+                    .fetch_message(int(d['autoroles_post_id'].split(',')[1]))
+                for e in d['autoroles'].keys():
+                    try:
+                        await msg.remove_reaction(e, member)
+                    except Exception as e:
+                        print(e)
+                        continue
 
     @commands.command()
     @commands.check(channel_check)
@@ -89,34 +104,33 @@ class Serv(commands.Cog):
         if len(roles) == 0:
             r1 = await s.create_role(name='♂', colour=discord.Colour.blue(), mentionable=True)
             r2 = await s.create_role(name='♀', colour=discord.Colour(16711893), mentionable=True)
-            d = data_read(ctx.guild)
-            d['genders'] = [r1.id, r2.id]
-            data_write(ctx.guild, d)
         elif len(roles) == 2:
             if isinstance(roles[0], discord.Role):
-                d = data_read(ctx.guild)
-                d['genders'] = [roles[0].id, roles[1].id]
-                data_write(ctx.guild, d)
+                r1 = roles[0]
+                r2 = roles[1]
             else:
                 r1 = await s.create_role(name=roles[0], colour=discord.Colour.blue(), mentionable=True)
                 r2 = await s.create_role(name=roles[1], colour=discord.Colour(16711893), mentionable=True)
-                d = data_read(ctx.guild)
-                d['genders'] = [r1.id, r2.id]
-                data_write(ctx.guild, d)
         else:
             raise errors.BadArgument
+        d = data_read(ctx.guild)
+        d['genders'] = [r1.id, r2.id]
+        data_write(ctx.guild, d)
+        await ctx.message.delete()
+        await ctx.send(f'" роли[`{r1.name}` и `{r2.name}`] успешно установлены как гендерные :male_sign: :female_sign: ',
+                       delete_after=40)
 
     @set_genders.error
     async def set_genders_error(self, ctx, error):
+        await ctx.message.delete()
         if isinstance(error, errors.BadArgument):
             await ctx.send('Указано неверное количество ролей или данные введены некорректно :monkey:', delete_after=40)
         elif isinstance(error, errors.MissingPermissions):
             await ctx.send('У тебя не достаточно прав :baby:', delete_after=40)
         elif isinstance(error, ChannelException):
-            pass
+            await error.do(ctx)
         else:
-            traceback.print_exc()
-            await ctx.send('Неизвестная ошибка :eyes:', delete_after=40)
+            await exp(ctx)
 
     @commands.command(name='set_roles')
     @has_permissions(administrator=True)
