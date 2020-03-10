@@ -325,7 +325,7 @@ class Music(commands.Cog):
                 try:
                     if before.channel is None:
                         self.members[member.id] = time.time()
-                    if after.channel is None:
+                    if after.channel is None and member.id not in d['notices']:
                         s = round(time.time() - self.members[member.id])
                         txt = f'{s // 3600} час{wordend(s // 3600)}, {s // 60  % 60:02} ' \
                             f'минут{wordend(s // 60 % 60, "у", "ы", "")}' \
@@ -482,8 +482,12 @@ class Music(commands.Cog):
                 await ctx.invoke(self.connect_)
 
             queue = player.queue.qsize() + 1 if vc and vc.is_playing() else 'В процессе'
+            has_pl = None
             if re.fullmatch(r'https://www.youtube.com/watch\?v=[0-9a-zA-Z_\-]+', search):
                 pk = re.match(r'https://www.youtube.com/watch\?v=([0-9a-zA-Z_\-]+)', search).groups()[0]
+            elif re.match(r'https://www.youtube.com/watch\?v=([0-9a-zA-Z_\-]+)&list=([0-9a-zA-Z_\-]+)', search):
+                pk, has_pl = re.match(r'https://www.youtube.com/watch\?v=([0-9a-zA-Z_\-]+)&list=([0-9a-zA-Z_\-]+)',
+                                      search).groups()
             else:
                 sk = {}
                 msg_logs = []
@@ -548,6 +552,86 @@ class Music(commands.Cog):
                       'title': res['snippet']['title'], 'id': msge,
                       'key': ''.join(random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ') for _ in range(6)), 'pl': ''}
             await self.queues[ctx.guild.id].put(source)
+            if has_pl:
+                await asyncio.sleep(5)
+                new_sms = await ctx.send(f'{ctx.author.mention} по твоему запросу я нашла плейлист :upside_down:\n'
+                                         f'Добавить его целиком или оставить только текущий трек?')
+                await new_sms.add_reaction('✅')
+                await new_sms.add_reaction('🚫')
+
+                def check(reaction, user):
+                    return user == ctx.message.author
+                try:
+                    reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=60)
+                    await new_sms.delete()
+                    if str(reaction.emoji) == '✅':
+                        try:
+                            await ctx.trigger_typing()
+                            pl, song = has_pl, source
+                            pagetoken, titles, duration, uniq = '', [], 0, {}
+                            sk = yt_playlist('snippet,contentDetails', pl)
+                            key = ''.join(random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ') for _ in range(6))
+                            await ctx.trigger_typing()
+                            while True:
+                                tmp_titles = []
+                                res = yt_request('https://www.googleapis.com/youtube/v3/playlistItems',
+                                                 params={
+                                                     'part': 'snippet,contentDetails,status,id',
+                                                     'playlistId': pl,
+                                                     'maxResults': 50,
+                                                     'pageToken': pagetoken
+                                                 })
+                                for r in res.json()["items"]:
+                                    if r["snippet"]["title"] != source["title"]:
+                                        tmp_titles.append(
+                                            [f'https://www.youtube.com/watch?v={r["contentDetails"]["videoId"]}',
+                                             r["snippet"]["title"]])
+                                titles += tmp_titles
+                                if 'prevPageToken' not in res.json().keys():
+                                    source = {'webpage_url': titles[0][0], 'requester': ctx.author,
+                                              'title': titles[0][1],
+                                              'id': None, 'key': key, 'pl': sk['items'][0]['snippet']['title']}
+                                    await self.queues[ctx.guild.id].put(source)
+                                if 'nextPageToken' in res.json().keys():
+                                    pagetoken = res.json()['nextPageToken']
+                                else:
+                                    break
+                            queue = str(player.queue.qsize() + 1) if vc and vc.is_playing() else 'В процессе'
+                            embed = discord.Embed(
+                                title=sk['items'][0]['snippet']['title'],
+                                url=f'https://www.youtube.com/playlist?list={pl}',
+                                colour=ctx.message.author.colour
+                            )
+                            embed.set_author(name=ctx.message.author.display_name + f' добавил{postix(ctx)} плейлист',
+                                             icon_url=ctx.message.author.avatar_url)
+                            embed.add_field(name='ДиДжей', value=ctx.message.author.mention, inline=True)
+                            embed.add_field(name='Количество', value=str(len(titles)) + f' трек{wordend(len(titles))}')
+                            embed.add_field(name='Очередь', value=queue)
+                            try:
+                                embed.set_image(url=sk["items"][0]["snippet"]["thumbnails"]["maxres"]["url"])
+                            except KeyError:
+                                try:
+                                    embed.set_image(url=sk["items"][0]["snippet"]["thumbnails"]["standard"]["url"])
+                                except KeyError:
+                                    try:
+                                        embed.set_image(url=sk["items"][0]["snippet"]["thumbnails"]["high"]["url"])
+                                    except KeyError:
+                                        pass
+                            msg = await ctx.send(embed=embed)
+                            msge = msg.id
+                            for t in titles[1:-1]:
+                                source = {'webpage_url': t[0], 'requester': ctx.author, 'title': t[1],
+                                          'id': None, 'key': key, 'pl': sk['items'][0]['snippet']['title']}
+                                await self.queues[ctx.guild.id].put(source)
+                            source = {'webpage_url': titles[-1][0], 'requester': ctx.author, 'title': titles[-1][1],
+                                      'id': msge, 'key': key, 'pl': sk['items'][0]['snippet']['title']}
+                            await self.queues[ctx.guild.id].put(source)
+
+                        except InvalidVoiceChannel:
+                            await ctx.send('Ошибка подключения к голосовому каналу.\n'
+                                           'Убедись что ты находишься хотя бы в одном :hugging:', delete_after=40)
+                except asyncio.TimeoutError:
+                    await new_sms.delete()
         except youtube_dl.DownloadError:
             await ctx.send(f'Ошибка воспроизведения. Возможно, данной песни не существует '
                            f'или она запрещена на территории твоей страны :mag_right:', delete_after=40)
@@ -563,6 +647,9 @@ class Music(commands.Cog):
         elif isinstance(error, InvalidVoiceChannel):
             await ctx.send('Ошибка подключения к голосовому каналу.\n'
                            'Убедись что ты находишься хотя бы в одном :hugging:', delete_after=40)
+        elif isinstance(error, IndexError):
+            await ctx.send(f'`Прости {ctx.message.author.name}` но я не могу найти {ctx.message.content} '
+                           f':slight_smile:', delete_after=20)
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f'`{ctx.message.author.name}` ты забыл{postix(ctx)} ввести название песни :slight_smile:',
                            delete_after=20)

@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from cogs.bot import channel_check, ChannelException
 
-from bottools import exp, postix
-from cfg import me
+from bottools import exp, postix, mcm, channels_perms
+from cfg import me, version
 
 import asyncio
 
@@ -18,10 +18,29 @@ class Extra(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{self.client.user}#{self.client.user.id} is active!')
+        with open('update.txt', 'r') as f:
+            update = f.readlines()
+        if len(update) > 0:
+            for guild in self.client.guilds:
+                embed = discord.Embed(
+                    colour=discord.Colour.green(),
+                    title='Важное обновление',
+                    description=f'Привет, `{guild.name}` :heart_exclamation: Мне приятно, что мы с тобой ещё дружим и '
+                                f'весело проводим время. Настало время порадовать тебя новыми плюшками специально '
+                                f'для версии {version}:\n\n' + '\n'.join(f'- {e}' for e in update)
+                )
+                embed.set_footer(text='это сообщение автоматически исчезнет через 24 часа.')
+                await discord.utils.get(guild.text_channels, id=channels_perms(guild)).send(embed=embed,
+                                                                                            delete_after=86400)
 
     @commands.command(name='clear', aliases=['c'])
     @has_permissions(manage_messages=True)
     async def clear_(self, ctx, n='all'):
+        try:
+            channel_check(ctx)
+        except ChannelException as error:
+            await error.do(ctx)
+            return
         if n != 'all':
             try:
                 await ctx.channel.purge(limit=int(n)+1)
@@ -40,6 +59,11 @@ class Extra(commands.Cog):
 
     @commands.command(name='bug')
     async def bug_(self, ctx, *, msg: str):
+        try:
+            channel_check(ctx)
+        except ChannelException as error:
+            await error.do(ctx)
+            return
         if ctx.message.author.id in self.bugs:
             await ctx.send(f'Прости `{ctx.message.author.name}` но отправка сообщений такого рода не '
                            f'должна быть чаще 1 раза в минуту :clock1:', delete_after=10)
@@ -49,6 +73,7 @@ class Extra(commands.Cog):
                                                 f'текст: {msg}')
             await ctx.send(f'`{ctx.message.author.name}` спасибо за помощь в разработке :diving_mask: ',
                            delete_after=20)
+            await mcm(ctx)
             await asyncio.sleep(60)
             try:
                 await ctx.message.delete()
@@ -66,7 +91,13 @@ class Extra(commands.Cog):
 
     @commands.command(name='git')
     async def github_(self, ctx):
-        await ctx.send(':house: мой домик: https://github.com/gitSunic/flexbot', delete_after=40)
+        try:
+            channel_check(ctx)
+        except ChannelException as error:
+            await error.do(ctx)
+            return
+        await ctx.send(':house: мой домик: https://github.com/gitSunic/flex-bot', delete_after=40)
+        await mcm(ctx)
 
     @commands.command(name='extra_help', aliases=['d.h'])
     async def extra_help_(self, ctx):
@@ -89,6 +120,9 @@ class Extra(commands.Cog):
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)
 
+    @commands.command()
+    async def ppp(self, ctx):
+        print(ctx.message.content)
 
 def setup(client):
     client.add_cog(Extra(client))

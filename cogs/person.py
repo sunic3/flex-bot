@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 from cogs.bot import channel_check, ChannelException
-from bottools import data_read
+from bottools import data_read, data_write
 
 
 class Person(commands.Cog):
@@ -39,20 +39,21 @@ class Person(commands.Cog):
         channel = self.client.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         member = discord.utils.get(message.guild.members, id=payload.user_id)
-        try:
-            if member.id != 669163733473296395:
-                d = data_read(message.guild)
-                if int(d["autoroles_post_id"].split(',')[1]) == payload.message_id:
-                    try:
-                        role = discord.utils.get(message.guild.roles, id=d["autoroles"][str(payload.emoji)])
-                        await member.remove_roles(role)
-                    except KeyError:
-                        return
-        except discord.Forbidden:
-            await channel.send('У бота недостаточно прав. Попробуй в настройках сервера '
-                               'расположить роль бота как можно выше :pleading_face:', delete_after=40)
-        except Exception:
-            await channel.send('Неизвестная ошибка :eyes:', delete_after=20)
+        if member is not None:
+            try:
+                if member.id != 669163733473296395:
+                    d = data_read(message.guild)
+                    if int(d["autoroles_post_id"].split(',')[1]) == payload.message_id:
+                        try:
+                            role = discord.utils.get(message.guild.roles, id=d["autoroles"][str(payload.emoji)])
+                            await member.remove_roles(role)
+                        except KeyError:
+                            return
+            except discord.Forbidden:
+                await channel.send('У бота недостаточно прав. Попробуй в настройках сервера '
+                                   'расположить роль бота как можно выше :pleading_face:', delete_after=40)
+            except Exception:
+                await channel.send('Неизвестная ошибка :eyes:', delete_after=20)
 
     @commands.command(aliases=['g'])
     async def change_gender(self, ctx):
@@ -117,6 +118,16 @@ class Person(commands.Cog):
                          icon_url='https://cdn.discordapp.com/avatars/'
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)
+
+    @commands.command(name='notice')
+    async def notice_(self, ctx):
+        d = data_read(ctx.guild)
+        if ctx.message.author.id in d['notices']:
+            d['notices'].remove(ctx.message.author.id)
+        else:
+            d['notices'].append(ctx.message.author.id)
+        data_write(ctx.guild, d)
+        await ctx.send(f'`{ctx.message.author.name}` всё :ok:')
 
 
 def setup(client):

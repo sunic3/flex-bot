@@ -5,14 +5,14 @@ from cfg import discord_token, version
 import os
 
 
-pix = '~'
+pix = '.'
 client = commands.Bot(command_prefix=pix)
 client.remove_command('help')
 
 
 async def default():
     await client.wait_until_ready()
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='~help'))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='.help'))
 
 
 @client.event
