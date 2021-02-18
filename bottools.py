@@ -14,7 +14,7 @@ TOKEN = yt[0]
 
 def yt_next():
     global TOKEN
-    if yt.index(TOKEN) == len(TOKEN)-1:
+    if yt.index(TOKEN) == (len(TOKEN)-1):
         TOKEN = yt[0]
     else:
         TOKEN = yt[yt.index(TOKEN)+1]

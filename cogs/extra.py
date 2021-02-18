@@ -119,6 +119,9 @@ class Extra(commands.Cog):
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)
 
+    @commands.command()
+    async def ppp(self, ctx):
+        print(ctx.message.content)
 
 def setup(client):
     client.add_cog(Extra(client))
