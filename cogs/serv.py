@@ -14,7 +14,6 @@ import os
 
 
 class Serv(commands.Cog):
-
     def __init__(self, client):
         self.client = client
         self.members = {}
@@ -92,8 +91,7 @@ class Serv(commands.Cog):
                 for e in d['autoroles'].keys():
                     try:
                         await msg.remove_reaction(e, member)
-                    except Exception as e:
-                        print(e)
+                    except Exception:
                         continue
 
     @commands.command()
@@ -117,7 +115,7 @@ class Serv(commands.Cog):
         d['genders'] = [r1.id, r2.id]
         data_write(ctx.guild, d)
         await ctx.message.delete()
-        await ctx.send(f'" роли[`{r1.name}` и `{r2.name}`] успешно установлены как гендерные :male_sign: :female_sign: ',
+        await ctx.send(f'" роли[`{r1.name}` и `{r2.name}`] успешно установлены как гендерные :male_sign: :female_sign:',
                        delete_after=40)
 
     @set_genders.error
@@ -169,7 +167,6 @@ class Serv(commands.Cog):
                         else:
                             t.append("")
                     else:
-                        print('h1')
                         raise commands.errors.BadArgument
                     text += f'{t[1]} : {t[0].mention}{t[2]}\n\n'
                     reacts[t[1]] = t[0].id
@@ -238,105 +235,6 @@ class Serv(commands.Cog):
             except discord.HTTPException:
                 pass
 
-    # @commands.command(name='ban', aliases=['s.b'])
-    # @has_permissions(ban_members=True)
-    # async def ban_(self, ctx, member: discord.Member, q: str, reason=None):
-    #     try:
-    #         channel_check(ctx)
-    #     except ChannelException as error:
-    #         await error.do(ctx)
-    #         return
-    #     await ctx.message.delete()
-    #     dates, t, s = re.findall(r'([0-9]{1,2})([dhms]{1})', q), 0, ''
-    #     t = sum(int(d[0]) * (24 * 3600 if d[1] == 'd' else 3600 if d[1] == 'h' else 60 if d[1] == 'm' else 1
-    #             if d[1] == 's' else 0) for d in dates)
-    #     print(t)
-    #     with open(f"{ctx.guild.id}/data.json", 'r') as f:
-    #         role_id = json.load(f)["ban"]
-    #     if not role_id:
-    #         await ctx.send('Нет особой роли для бана. Используй команду `.s.ban.set <роль/имя роли>`')
-    #         return
-    #     ban_role = discord.utils.get(ctx.guild.roles, id=role_id)
-    #     self.banned[member.id] = []
-    #     for role in member.roles[1:]:
-    #         self.banned[member.id].append(role)
-    #         await member.remove_roles(role)
-    #     await member.add_roles(ban_role)
-    #     srok = f'{t // 86400}{wordend(t // 86400, "день", "дня", "дней")} {t // 3600 % 24}ч. ' \
-    #         f'{t // 60 % 60}мин. {t % 60}сек.' if t >= 86400 else \
-    #         f'{t // 3600}ч. {t // 60 % 60}мин. {t % 60}сек.' if t >= 3600 else \
-    #         f'{t // 60}мин. {t % 60}сек.' if t >= 60 else f'{t}сек.'
-    #     r = 'без объяснения причины' if not reason else f'по причине: **"{reason}"**'
-    #     msg = await ctx.send(f':octagonal_sign: {member.mention} получил{postix(member)} бан на срок `{srok}` {r}')
-    #     self.banned[member.id].append(msg)
-    #     await asyncio.sleep(t)
-    #     await member.remove_roles(ban_role)
-    #     for role in self.banned[member.id][:-1]:
-    #         await member.add_roles(role)
-    #     await self.banned[member.id][-1].delete()
-    #     self.banned[member.id] = []
-    #
-    # @ban_.error
-    # async def ban_error(self, ctx, error):
-    #     if isinstance(error, commands.CheckFailure):
-    #         pass
-    #     elif isinstance(error, commands.MissingPermissions):
-    #         await ctx.message.delete()
-    #         await ctx.send('У тебя не достаточно прав :baby:', delete_after=40)
-    #     else:
-    #         await ctx.message.delete()
-    #         await ctx.send('Неизвестная ошибка :eyes:', delete_after=40)
-
-    # @commands.command(name='black_role', aliases=['.s.r'])
-    # @has_permissions(administrator=True)
-    # async def black_role_(self, ctx, role: discord.Role):
-    #     try:
-    #         channel_check(ctx)
-    #     except ChannelException as error:
-    #         await error.do(ctx)
-    #         return
-    #     await ctx.message.delete()
-    #     d = data_read(ctx.guild)
-    #     d['ban_role'] = role.id
-    #     data_write(ctx.guild, d)
-    #
-    # @black_role_.error
-    # async def black_role_error(self, ctx, error):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         await ctx.message.delete()
-    #         await ctx.send('У тебя не достаточно прав :baby:', delete_after=40)
-    #     else:
-    #         await ctx.message.delete()
-    #         await ctx.send('Неизвестная ошибка :eyes:', delete_after=40)
-    #
-    # @commands.command(name='unban', aliases=['s.ub'])
-    # @commands.check(channel_check)
-    # @has_permissions(ban_members=True)
-    # async def unban_(self, ctx, member: discord.Member):
-    #     await ctx.message.delete()
-    #     with open(f"{ctx.guild.id}/data.json", 'r') as f:
-    #         role_id = json.load(f)["ban"]
-    #     if not role_id:
-    #         await ctx.send('Нет особой роли для бана. Используй команду `.s.ban.set <роль/имя роли>`')
-    #         return
-    #     ban_role = discord.utils.get(ctx.guild.roles, id=role_id)
-    #     await member.remove_roles(ban_role)
-    #     for role in self.banned[member.id][:-1]:
-    #         await member.add_roles(role)
-    #     await self.banned[member.id][-1].delete()
-    #     self.banned[member.id] = []
-    #
-    # @unban_.error
-    # async def unban_error(self, ctx, error):
-    #     if isinstance(error, commands.CheckFailure):
-    #         pass
-    #     elif isinstance(error, commands.MissingPermissions):
-    #         await ctx.message.delete()
-    #         await ctx.send('У тебя не достаточно прав :baby:', delete_after=40)
-    #     else:
-    #         await ctx.message.delete()
-    #         await ctx.send('Неизвестная ошибка :eyes:', delete_after=40)
-
     @commands.command(name='channels', aliases=['s.c'])
     @has_permissions(administrator=True)
     async def channels_(self, ctx, *chans: discord.TextChannel):
@@ -371,7 +269,8 @@ class Serv(commands.Cog):
         d = data_read(ctx.guild)
         d['notice'] = not d['notice']
         data_write(ctx.guild, d)
-        await ctx.send(f'Настройка `участник покинул канал` изменена на  [ {int(d["notice"])} ]  :thumbsup:', delete_after=20)
+        await ctx.send(f'Настройка `участник покинул канал` изменена на  [ {int(d["notice"])} ]  :thumbsup:',
+                       delete_after=20)
 
     @notice_.error
     async def notice_error(self, ctx, error):
@@ -459,7 +358,7 @@ class Serv(commands.Cog):
                         ':five:`.edit.count` - по умолчанию, после поиска музыки показываются лишь первые 5 совпадений.'
                         ' Ты можешь изменить это количество на любое число от 5 до 10 включительно.'
         )
-        embed.set_author(name='Развлекательные команды',
+        embed.set_author(name='Серверные команды',
                          icon_url='https://cdn.discordapp.com/avatars/'
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)

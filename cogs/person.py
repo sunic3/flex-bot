@@ -8,7 +8,6 @@ from bottools import data_read, data_write
 
 
 class Person(commands.Cog):
-
     def __init__(self, client):
         self.client = client
 

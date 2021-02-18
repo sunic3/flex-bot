@@ -22,7 +22,6 @@ def channel_check(ctx):
 
 
 class Bot(commands.Cog):
-
     def __init__(self, client):
         self.client = client
 

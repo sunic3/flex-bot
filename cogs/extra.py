@@ -10,7 +10,6 @@ import asyncio
 
 
 class Extra(commands.Cog):
-
     def __init__(self, client):
         self.client = client
         self.bugs = []
@@ -18,7 +17,7 @@ class Extra(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{self.client.user}#{self.client.user.id} is active!')
-        with open('update.txt', 'r') as f:
+        with open('update.txt', 'r', encoding='utf-8') as f:
             update = f.readlines()
         if len(update) > 0:
             for guild in self.client.guilds:
@@ -26,8 +25,8 @@ class Extra(commands.Cog):
                     colour=discord.Colour.green(),
                     title='Важное обновление',
                     description=f'Привет, `{guild.name}` :heart_exclamation: Мне приятно, что мы с тобой ещё дружим и '
-                                f'весело проводим время. Настало время порадовать тебя новыми плюшками специально '
-                                f'для версии {version}:\n\n' + '\n'.join(f'- {e}' for e in update)
+                                f'весело проводим время. Настало время порадовать тебя плюшками новой '
+                                f'версии `{version}`:\n\n' + '\n'.join(f'- {e[:-1]};' for e in update)
                 )
                 embed.set_footer(text='это сообщение автоматически исчезнет через 24 часа.')
                 await discord.utils.get(guild.text_channels, id=channels_perms(guild)).send(embed=embed,
@@ -69,8 +68,8 @@ class Extra(commands.Cog):
                            f'должна быть чаще 1 раза в минуту :clock1:', delete_after=10)
         else:
             self.bugs.append(ctx.message.author.id)
-            await self.client.get_user(me).send(f'сервер: {ctx.guild.name}\nавтор: {ctx.message.author.mention}\n'
-                                                f'текст: {msg}')
+            user = await self.client.fetch_user(me)
+            user.send(f'сервер: {ctx.guild.name}\nавтор: {ctx.message.author.mention}\nтекст: {msg}')
             await ctx.send(f'`{ctx.message.author.name}` спасибо за помощь в разработке :diving_mask: ',
                            delete_after=20)
             await mcm(ctx)
@@ -120,9 +119,6 @@ class Extra(commands.Cog):
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)
 
-    @commands.command()
-    async def ppp(self, ctx):
-        print(ctx.message.content)
 
 def setup(client):
     client.add_cog(Extra(client))

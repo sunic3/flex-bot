@@ -57,7 +57,7 @@ def lyrics(name):
         if song is None:
             return f"Слова песни {name} не найдены"
         return f'\n{song.lyrics}'
-    except Exception as e:
+    except Exception:
         return f"Слова песни {name} не найдены"
 
 
@@ -504,11 +504,14 @@ class Music(commands.Cog):
                 result = sk.get("items", [])[0]
                 pk = result["id"]["videoId"]
             try:
+                print(f'pk: {pk}')
                 res = yt_request('https://www.googleapis.com/youtube/v3/videos',
                                  params={
                                      'id': pk,
                                      'part': 'snippet,contentDetails,statistics'
-                                 }).json()["items"][0]
+                                 }).json()
+                print(res)
+                res = res["items"][0]
             except KeyError:
                 await ctx.send(f'По запросу {search} ничего не найдено :weary:\n')
             t = re.findall(r'\d+', res["contentDetails"]["duration"])
@@ -1329,6 +1332,7 @@ class Music(commands.Cog):
                 player.dy = False
         except KeyError:
             pass
+
     @stop_.error
     async def stop_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
@@ -1356,9 +1360,12 @@ class Music(commands.Cog):
                 embed = discord.Embed(
                     colour=discord.Colour.blurple()
                 )
+                embed_text = []
+                for j in range(len(lh)):
+                    user = await self.client.fetch_user(lh[j[1]])
+                    embed_text.append(f'{i + j + 1}. **{lh[j][0]} {user.name}')
                 embed.add_field(name=f'История плейлиста [{i + 1}-{i + 10 if n > i + 10 else n}]',
-                                value='\n'.join([f'{i + j + 1}. **{lh[j][0]}** '
-                                                 f'`{self.client.get_user(lh[j][1]).name}`' for j in range(len(lh))]))
+                                value='\n'.join(embed_text))
                 await ctx.send(embed=embed, delete_after=3600)
         else:
             with open(f'{ctx.guild.id}tmp.html', 'w', encoding='utf-8') as f:
@@ -1366,9 +1373,10 @@ class Music(commands.Cog):
                 f.write(f'<h2 style="color: #72767d">История плейлиста сервера {ctx.guild.name} [1-{n}]</h2>')
                 f.write('<ol>')
                 for i in range(n):
+                    user = await self.client.fetch_user(h[i][1])
                     f.write(f'<li style="margin-bottom: 2px;"><b>{h[i][0]}</b> '
                             f'<span style="display: inline-block;background-color: #000;padding: 3px 2px;'
-                            f'border-radius: 5px;">{self.client.get_user(h[i][1]).name}</code></li>')
+                            f'border-radius: 5px;">{user.name}</code></li>')
                 f.write('</ol></body>')
                 f.close()
             await ctx.send(file=discord.File(f'{ctx.guild.id}tmp.html', filename='music.html'), delete_after=3600)
