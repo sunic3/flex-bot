@@ -15,7 +15,7 @@ class Person(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         channel = self.client.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        member = discord.utils.get(message.guild.members, id=payload.user_id)
+        member = await message.guild.fetch_member(payload.user_id)
         try:
             if member.id != 669163733473296395:
                 d = data_read(message.guild)
@@ -37,7 +37,7 @@ class Person(commands.Cog):
     async def on_raw_reaction_remove(self, payload):
         channel = self.client.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-        member = discord.utils.get(message.guild.members, id=payload.user_id)
+        member = await message.guild.fetch_member(payload.user_id)
         if member is not None:
             try:
                 if member.id != 669163733473296395:
@@ -111,7 +111,9 @@ class Person(commands.Cog):
             description=':cat:`.g`,`.change_gender` - если пол, который я выдала тебе автоматически, тебя не '
                         'устраивает, ты можешь его сам поменять.\n'
                         ':stars:`.ava` - пришлю фотку твоей аватарки, или аватарки любого другого участника сервера, '
-                        'главное не забудь отметить его в сообщении'
+                        'главное не забудь отметить его в сообщении\n'
+                        ':alarm_clock: - ты больше не будешь получать уведомления о том, сколько ты провел времени '
+                        'на канале'
         )
         embed.set_author(name='Персональные команды',
                          icon_url='https://cdn.discordapp.com/avatars/'
@@ -126,7 +128,7 @@ class Person(commands.Cog):
         else:
             d['notices'].append(ctx.message.author.id)
         data_write(ctx.guild, d)
-        await ctx.send(f'`{ctx.message.author.name}` всё :ok:')
+        await ctx.send(f'`{ctx.message.author.name}` всё :ok:', delete_after=80)
 
 
 def setup(client):

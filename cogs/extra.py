@@ -6,13 +6,10 @@ from cogs.bot import channel_check, ChannelException
 from bottools import exp, postix, mcm, channels_perms
 from cfg import me, version
 
-import asyncio
-
 
 class Extra(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.bugs = []
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -33,7 +30,7 @@ class Extra(commands.Cog):
                                                                                             delete_after=86400)
 
     @commands.command(name='clear', aliases=['c'])
-    @has_permissions(manage_messages=True)
+    @has_permissions(Administrator=True)
     async def clear_(self, ctx, n='all'):
         try:
             channel_check(ctx)
@@ -67,18 +64,11 @@ class Extra(commands.Cog):
             await ctx.send(f'Прости `{ctx.message.author.name}` но отправка сообщений такого рода не '
                            f'должна быть чаще 1 раза в минуту :clock1:', delete_after=10)
         else:
-            self.bugs.append(ctx.message.author.id)
             user = await self.client.fetch_user(me)
-            user.send(f'сервер: {ctx.guild.name}\nавтор: {ctx.message.author.mention}\nтекст: {msg}')
+            await user.send(f'сервер: {ctx.guild.name}\nавтор: {ctx.message.author.mention}\nтекст: {msg}')
             await ctx.send(f'`{ctx.message.author.name}` спасибо за помощь в разработке :diving_mask: ',
                            delete_after=20)
             await mcm(ctx)
-            await asyncio.sleep(60)
-            try:
-                await ctx.message.delete()
-            except discord.HTTPException:
-                pass
-            self.bugs.remove(ctx.message.author.id)
 
     @bug_.error
     async def bug_error(self, ctx, error):
@@ -109,19 +99,15 @@ class Extra(commands.Cog):
         embed = discord.Embed(
             colour=discord.Colour.from_rgb(r=30, g=144, b=255),
             description=f':broom:`.clear` - удалю последние *n* сообщений на канале, но не более 100 за раз!\n'
-                        f':crab:`.bug` - если ты найдешь какие-то значимы ошибки в моей работе, обязательно '
+                        f':beetle:`.bug` - если ты найдешь какие-то значимы ошибки в моей работе, обязательно '
                         f'отправь их мне при помощи этой команды.\n'
-                        f':mermaid:`.git` - **разденусь перед тобой полностью** (всмысле пришлю ссылку на свой '
-                        f'открытый код, а ты о чём подумал{postix(ctx)}? хе-хе)'
+                        f':house:`.git` - мой домик (открытый код)'
         )
         embed.set_author(name='Дополнительные команды',
                          icon_url='https://cdn.discordapp.com/avatars/'
                                   '669163733473296395/89d3cf65e539aaba9e6d1669d32b1ea7.webp?size=1024')
         await ctx.send(embed=embed, delete_after=3600)
 
-    @commands.command()
-    async def ppp(self, ctx):
-        print(ctx.message.content)
 
 def setup(client):
     client.add_cog(Extra(client))

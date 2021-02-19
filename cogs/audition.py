@@ -132,8 +132,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         loop = loop or asyncio.get_event_loop()
         to_run = partial(ytdl.extract_info, url=data['webpage_url'], download=False)
         new_data = await loop.run_in_executor(None, to_run)
-        return cls(discord.FFmpegPCMAudio(new_data['url'], **ffmpegopts), src=data,
-                   data=new_data)
+        return cls(discord.FFmpegPCMAudio(new_data['url'], **ffmpegopts), src=data, data=new_data)
 
 
 class MusicPlayer:
@@ -504,13 +503,11 @@ class Music(commands.Cog):
                 result = sk.get("items", [])[0]
                 pk = result["id"]["videoId"]
             try:
-                print(f'pk: {pk}')
                 res = yt_request('https://www.googleapis.com/youtube/v3/videos',
                                  params={
                                      'id': pk,
                                      'part': 'snippet,contentDetails,statistics'
                                  }).json()
-                print(res)
                 res = res["items"][0]
             except KeyError:
                 await ctx.send(f'По запросу {search} ничего не найдено :weary:\n')
@@ -1402,32 +1399,34 @@ class Music(commands.Cog):
         except ChannelException as error:
             await error.do(ctx)
             return
-        medals = [':first_place:', ':second_place:', ':third_place:']
-        songs, users = Counter(), Counter()
-
-        with open(f"{ctx.guild.id}/history.json", 'r') as f:
-            d = json.load(f)
-
-        for x in d:
-            songs[x[0]] += 1
-            users[x[1]] += 1
-        songs, users = songs.most_common(3), users.most_common(3)
-
-        songs = '\n'.join([f'{medals[i]} **{songs[i][0]}** '
-                           f'`{str(songs[i][1]) + " раз" + wordend(songs[i][1], five="")}`'
-                           for i in range(len(songs))])
-        users = '\n'.join([f'{medals[i]} **{self.client.get_user(users[i][0]).name}** '
-                           f'`{str(users[i][1]) + " запрос" + wordend(users[i][1])}`'
-                           for i in range(len(users))])
-
-        embed = discord.Embed(colour=int("FFD700", 16), title=f'Топ сервера `{ctx.guild.name}`')
-        embed.add_field(name='Самые популярные песни', value=songs, inline=False)
-        embed.add_field(name='Лидеры по количеству запросов', value=users, inline=True)
-        embed.set_footer(text=f'Всего в истории сервера записано {len(d)} песен. '
-                              f'Используй команду .h all чтобы посмотреть всю историю')
-
+        # medals = [':first_place:', ':second_place:', ':third_place:']
+        # songs, users = Counter(), Counter()
+        #
+        # with open(f"{ctx.guild.id}/history.json", 'r') as f:
+        #     d = json.load(f)
+        #
+        # for x in d:
+        #     songs[x[0]] += 1
+        #     users[x[1]] += 1
+        # songs, users = songs.most_common(3), users.most_common(3)
+        #
+        # songs = '\n'.join([f'{medals[i]} **{songs[i][0]}** '
+        #                    f'`{str(songs[i][1]) + " раз" + wordend(songs[i][1], five="")}`'
+        #                    for i in range(len(songs))])
+        # users = '\n'.join([f'{medals[i]} **{self.client.get_user(users[i][0]).name}** '
+        #                    f'`{str(users[i][1]) + " запрос" + wordend(users[i][1])}`'
+        #                    for i in range(len(users))])
+        #
+        # embed = discord.Embed(colour=int("FFD700", 16), title=f'Топ сервера `{ctx.guild.name}`')
+        # embed.add_field(name='Самые популярные песни', value=songs, inline=False)
+        # embed.add_field(name='Лидеры по количеству запросов', value=users, inline=True)
+        # embed.set_footer(text=f'Всего в истории сервера записано {len(d)} песен. '
+        #                       f'Используй команду .h all чтобы посмотреть всю историю')
+        #
+        # await ctx.message.delete()
+        # await ctx.send(embed=embed, delete_after=3600)
         await ctx.message.delete()
-        await ctx.send(embed=embed, delete_after=3600)
+        await ctx.send('Простите, данная функция временно не работает')
 
     @commands.command(name='download', aliases=['d'])
     async def download_(self, ctx, *, query: str):

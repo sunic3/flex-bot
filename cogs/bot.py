@@ -28,14 +28,16 @@ class Bot(commands.Cog):
     @commands.command(aliases=['b.addrole'])
     @has_permissions(administrator=True)
     async def b_add_role(self, ctx, role: discord.Role):
-        await ctx.message.author.guild.get_member(669163733473296395).add_roles(role)
-        # await ctx.message.delete()
+        user = await ctx.message.author.guild.fetch_member(669163733473296395)
+        user.add_roles(role)
+        await ctx.message.delete()
         await ctx.send(f'Роль {role.name} успешно присвоена. Спасибо ^3')
 
     @commands.command(aliases=['b.rmrole'])
     @has_permissions(administrator=True)
     async def b_rm_role(self, ctx, role: discord.Role):
-        await ctx.message.author.guild.get_member(669163733473296395).remove_roles(role)
+        user = await ctx.message.author.guild.fetch_member(669163733473296395)
+        user.remove_roles(role)
         await ctx.message.delete()
         await ctx.send(f'Роль {role.name} удалена.')
 

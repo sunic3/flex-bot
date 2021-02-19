@@ -5,6 +5,7 @@ from cfg import youtube_token as yt
 import traceback
 import requests
 import json
+import os
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -49,14 +50,25 @@ def wordend(d, one='', two='а', five='ов'):
 
 
 def data_read(guild):
-    with open(f'{guild.id}/data.json', 'r') as f:
-        data = json.load(f)
+    try:
+        with open(f'{guild.id}/data.json', 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {'autoroles': {}, 'autoroles_post_id': None, 'genders': [], 'dj': None, 'notices': [],
+                'music_id': None, 'channels': [], 'current': None, 'now': True, 'notice': True, 'count': 5}
+        data_write(guild, data)
+        with open(f"{guild.id}/history.json", "w") as f:
+            json.dump([], f)
     return data
 
 
 def data_write(guild, data):
-    with open(f'{guild.id}/data.json', 'w') as f:
-        json.dump(data, f, indent=4, sort_keys=True)
+    filename = f'{guild.id}/data.json'
+    try:
+        with open(filename, 'w') as f:
+            json.dump(data, f, indent=4, sort_keys=True)
+    except FileNotFoundError:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
 
 
 def yt_search(q, part, max, type):
