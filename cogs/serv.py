@@ -22,10 +22,11 @@ class Serv(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         info = discord.utils.find(lambda x: x.permissions_for(guild.me).send_messages, guild.text_channels)
+        owner = await guild.fetch_member(guild.owner_id)
         embed = discord.Embed(colour=discord.Colour.green(), title=f'Приветик, {guild.name}:heart_exclamation:',
-                              description=f'Спасибочки за приглашение на свой сервер, {guild.owner.mention} '
+                              description=f'Спасибочки за приглашение на свой сервер, {owner.mention} '
                                           f':revolving_hearts:\nВ основном, я выполняю функции музыкального бота. '
-                                          f'Напиши `.m.h` чтобы посмотреть их. Рекомендую сделать специальный канал '
+                                          f'Напиши `.m.h` чтобы посмотреть их. Рекомендую выбрать специальный канал '
                                           f'для музыки и прописать там `.music`.\nЕсли тебе интересно поподробнее '
                                           f'узнать о других моих возможностях, напиши `.help`'
                               )
@@ -41,12 +42,14 @@ class Serv(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
+        await asyncio.sleep(15)
         dir_name = f'{guild.id}'
         for file in os.listdir(dir_name):
             file_path = os.path.join(dir_name, file)
             if os.path.isfile(file_path):
                 os.remove(file_path)
         os.rmdir(dir_name)
+        print(f'successfully deleted {guild.id} directory')
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
